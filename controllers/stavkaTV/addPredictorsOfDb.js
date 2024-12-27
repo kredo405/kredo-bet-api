@@ -36,28 +36,28 @@ export const addPredictorsOfDB = async (link) => {
       const response = await axios.request(options);
       const result = response.data;
 
-      // Сохраняем данные в Firebase
-      if (result.data) {
-        const batch = db.batch(); // Используем батч для оптимального сохранения
-        result.data.forEach((item) => {
-          const docRef = db.collection("predictors").doc(item.id);
-          batch.set(docRef, item);
-        });
-        await batch.commit();
-        console.log(`Saved data from offset: ${offset}`);
-      }
+      // // Сохраняем данные в Firebase
+      // if (result.data) {
+      //   const batch = db.batch(); // Используем батч для оптимального сохранения
+      //   result.data.forEach((item) => {
+      //     const docRef = db.collection("predictors").doc(item.id);
+      //     batch.set(docRef, item);
+      //   });
+      //   await batch.commit();
+      //   console.log(`Saved data from offset: ${offset}`);
+      // }
 
-      // Проверяем, есть ли ещё данные для загрузки
-      const { meta } = result;
-      if (total === null) total = meta.total;
+      // // Проверяем, есть ли ещё данные для загрузки
+      // const { meta } = result;
+      // if (total === null) total = meta.total;
 
-      if (offset + limit < total) {
-        // Ждём случайную задержку перед следующим запросом
-        await new Promise((resolve) => setTimeout(resolve, getRandomDelay()));
-        return fetchData(offset + limit, limit, total);
-      } else {
-        console.log("All data fetched and saved.");
-      }
+      // if (offset + limit < total) {
+      //   // Ждём случайную задержку перед следующим запросом
+      //   await new Promise((resolve) => setTimeout(resolve, getRandomDelay()));
+      //   return fetchData(offset + limit, limit, total);
+      // } else {
+      //   console.log("All data fetched and saved.");
+      // }
     } catch (error) {
       console.error("Error fetching data:", error);
     }
