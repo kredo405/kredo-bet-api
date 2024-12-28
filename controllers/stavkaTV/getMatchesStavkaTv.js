@@ -22,10 +22,23 @@ export const getMatchesStavkaTv = async (
 
   let rand = Math.floor(Math.random() * desktop_agents.length);
 
+  let url;
+
+  if (status === "upcoming" && sport === "onlyTopLeagues=true") {
+    url = `https://stavka.tv/api/v2/matches/center?dateFrom=${dateFrom}&dateTo=${dateTo}&onlyTopLeagues=true&status=upcoming&withHigherTopLeagues=true&sort=league_country_asc&offset=0&limit=${limit}`;
+  } else if (status === "ended") {
+    url = `https://stavka.tv/api/v2/matches/center?dateFrom=${dateFrom}&dateTo=${dateTo}&status=ended&withHigherTopLeagues=true&sort=league_country_asc&offset=0&limit=${limit}&${sport}`;
+  } else if (status === "upcoming") {
+    url = `https://stavka.tv/api/v2/matches/center?dateFrom=${dateFrom}&dateTo=${dateTo}&status=upcoming&withHigherTopLeagues=true&sort=league_country_asc&offset=0&limit=${limit}&${sport}`;
+  }
+
   const options = {
     method: "GET",
-    url: `https://stavka.tv/api/v2/matches/center?dateFrom=${dateFrom}&dateTo=${dateTo}&status=${status}&withHigherTopLeagues=true&sort=league_country_asc&offset=0&limit=${limit}&${sport}`,
-    // https://stavka.tv/api/v2/matches/center?dateFrom=2024-12-27&dateTo=2024-12-27&status=ended&withHigherTopLeagues=true&sort=league_country_asc&offset=0&limit=150&sport=soccer
+    url: url,
+
+    // https://stavka.tv/api/v2/matches/center?dateFrom=2024-12-28&dateTo=2024-12-29&onlyTopLeagues=true&status=upcoming&withHigherTopLeagues=true&sort=league_country_asc&offset=0&limit=150
+    // https://stavka.tv/api/v2/matches/center?dateFrom=2024-12-28&dateTo=2024-12-29&status=upcoming&withHigherTopLeagues=true&sort=league_country_asc&offset=0&limit=150&sport=soccer
+    // https://stavka.tv/api/v2/matches/center?dateFrom=2024-12-28&dateTo=2024-12-29&status=ended&withHigherTopLeagues=true&sort=league_country_asc&offset=0&limit=150&sport=soccer
     headers: {
       "User-Agent": desktop_agents[rand],
     },

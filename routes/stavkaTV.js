@@ -15,6 +15,7 @@ stavkaTvRouter.get("/matches", async (req, res) => {
     req.query.limit,
     req.query.dateFrom,
     req.query.dateTo,
+    req.query.status,
     req.query.sport
   );
   res.json({ matches });
