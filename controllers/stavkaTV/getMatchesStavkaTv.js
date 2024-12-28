@@ -1,6 +1,12 @@
 import axios from "axios";
 
-export const getMatchesStavkaTv = async (limit, dateFrom, dateTo, sport) => {
+export const getMatchesStavkaTv = async (
+  limit,
+  dateFrom,
+  dateTo,
+  status,
+  sport
+) => {
   const desktop_agents = [
     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36",
@@ -18,7 +24,7 @@ export const getMatchesStavkaTv = async (limit, dateFrom, dateTo, sport) => {
 
   const options = {
     method: "GET",
-    url: `https://stavka.tv/api/v2/matches/center?dateFrom=${dateFrom}&dateTo=${dateTo}&onlyTopLeagues=true&status=upcoming&withHigherTopLeagues=true&sort=league_country_asc&offset=0&limit=${limit}&${sport}`,
+    url: `https://stavka.tv/api/v2/matches/center?dateFrom=${dateFrom}&dateTo=${dateTo}&onlyTopLeagues=true&status=;${status}&withHigherTopLeagues=true&sort=league_country_asc&offset=0&limit=${limit}&${sport}`,
     headers: {
       "User-Agent": desktop_agents[rand],
     },
