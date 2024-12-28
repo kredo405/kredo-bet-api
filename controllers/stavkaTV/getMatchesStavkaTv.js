@@ -24,7 +24,8 @@ export const getMatchesStavkaTv = async (
 
   const options = {
     method: "GET",
-    url: `https://stavka.tv/api/v2/matches/center?dateFrom=${dateFrom}&dateTo=${dateTo}&onlyTopLeagues=true&status=${status}&withHigherTopLeagues=true&sort=league_country_asc&offset=0&limit=${limit}&${sport}`,
+    url: `https://stavka.tv/api/v2/matches/center?dateFrom=${dateFrom}&dateTo=${dateTo}&status=${status}&withHigherTopLeagues=true&sort=league_country_asc&offset=0&limit=${limit}&${sport}`,
+    // https://stavka.tv/api/v2/matches/center?dateFrom=2024-12-27&dateTo=2024-12-27&status=ended&withHigherTopLeagues=true&sort=league_country_asc&offset=0&limit=150&sport=soccer
     headers: {
       "User-Agent": desktop_agents[rand],
     },
