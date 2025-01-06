@@ -6,6 +6,7 @@ import { getPreviewStavkaTv } from "../controllers/stavkaTV/getPreviewStavkaTv.j
 import { getAverageStatisticsStavkaTv } from "../controllers/stavkaTV/getAverageStatisticsStavkaTv.js";
 import { getPopularBetsStavkaTv } from "../controllers/stavkaTV/getPopularBetsStavkaTv.js";
 import { addPredictorsOfDB } from "../controllers/stavkaTV/addPredictorsOfDb.js";
+import { getLastMatchesWithTeam } from "../controllers/stavkaTV/getLastMatchesWithTeam.js";
 import { getOdds } from "../controllers/stavkaTV/getOdds.js";
 
 const stavkaTvRouter = Router();
@@ -19,6 +20,15 @@ stavkaTvRouter.get("/matches", async (req, res) => {
     req.query.sport
   );
   res.json({ matches });
+});
+
+stavkaTvRouter.get("/last-matches", async (req, res) => {
+  const lastMatches = await getLastMatchesWithTeam(
+    req.query.sport,
+    req.query.slug,
+    req.query.offset
+  );
+  res.json({ lastMatches });
 });
 
 stavkaTvRouter.get("/predictions", async (req, res) => {
