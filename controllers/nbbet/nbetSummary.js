@@ -18,7 +18,7 @@ export const getSummary = async (link) => {
 
     const options = {
         method: "GET",
-        url: `https://app.nb-bet.com/v1/soccer/events/summary/${link}/50/12/false/false/false/false/true`,
+        url: `https://app.nb-bet.com/v1/soccer/events/summary/${link}/50/12/true/false/true/false/true`,
         headers: {
             "User-Agent": desktop_agents[rand],
         },
