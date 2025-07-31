@@ -5,7 +5,6 @@ import arbworldRouter from "./routes/arbworld.js";
 import xgScoreRouter from "./routes/xgscore.js";
 import excaperRouter from "./routes/excaper.js";
 import stavkaTvRouter from "./routes/stavkaTV.js";
-// import db from "./firebase.js";
 
 const app = express();
 
