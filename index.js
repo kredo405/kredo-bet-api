@@ -43,7 +43,7 @@ app.post('/chat', async (req, res) => {
     res.send({ response: text });
   } catch (error) {
     console.error(error);
-    res.status(500).send({ error: 'Failed to generate content' });
+    res.status(500).send({ error: `Failed to generate content ${error}` });
   }
 });
 // Port Number
