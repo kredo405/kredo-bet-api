@@ -30,6 +30,7 @@ app.use("/gemini", geminiRouter);
 app.post('/chat', async (req, res) => {
   try {
     const { prompt } = req.body;
+    console.log(req.body)
 
     if (!prompt) {
       return res.status(400).send({ error: 'Prompt is required' });
