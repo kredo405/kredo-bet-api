@@ -9,7 +9,8 @@ import stavkaTvRouter from "./routes/stavkaTV.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const app = express();
-const genAI = new GoogleGenerativeAI("AIzaSyBoghkcOWCEOiE0egp_a9NvHr5wN1iP0WU");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
 
 app.use(cors());
 app.use(express.json()); // Добавьте эту строку для парсинга JSON
