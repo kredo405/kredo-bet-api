@@ -31,9 +31,9 @@ app.post('/chat', async (req, res) => {
   try {
     // const { prompt } = req.body;
 
-    if (!req.body) {
-      return res.status(400).send({ error: 'Prompt is required' });
-    }
+    // if (!req.body) {
+    //   return res.status(400).send({ error: 'Prompt is required' });
+    // }
 
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const result = await model.generateContent(req.body);
