@@ -6,7 +6,6 @@ import arbworldRouter from "./routes/arbworld.js";
 import xgScoreRouter from "./routes/xgscore.js";
 import excaperRouter from "./routes/excaper.js";
 import stavkaTvRouter from "./routes/stavkaTV.js";
-import { main } from "./routes/geminiApi.js";
 
 const app = express();
 
