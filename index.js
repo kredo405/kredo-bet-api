@@ -12,12 +12,10 @@ const app = express();
 const genAI = new GoogleGenerativeAI("AIzaSyBoghkcOWCEOiE0egp_a9NvHr5wN1iP0WU");
 
 app.use(cors());
+app.use(express.json()); // Добавьте эту строку для парсинга JSON
 
 app.get("/", (req, res) => {
   res.json("welcome to our server");
-});
-app.get("/gemini", (req, res) => {
-  main();
 });
 
 app.use("/nbBet", nbBetRouter);
@@ -29,12 +27,7 @@ app.use("/gemini", geminiRouter);
 
 app.post('/chat', async (req, res) => {
   try {
-    // const { prompt } = req.body;
-
-    // if (!req.body) {
-    //   return res.status(400).send({ error: 'Prompt is required' });
-    // }
-
+    // req.body уже будет JSON-объектом благодаря app.use(express.json())
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const result = await model.generateContent(req.body);
     const response = await result.response;
