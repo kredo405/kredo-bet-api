@@ -31,7 +31,7 @@ app.post('/chat', async (req, res) => {
   try {
     // const { prompt } = req.body;
 
-    if (!prompt) {
+    if (!req.body) {
       return res.status(400).send({ error: 'Prompt is required' });
     }
 
