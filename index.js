@@ -29,15 +29,14 @@ app.use("/gemini", geminiRouter);
 
 app.post('/chat', async (req, res) => {
   try {
-    const { prompt } = req.body;
-    console.log(req.body)
+    // const { prompt } = req.body;
 
     if (!prompt) {
       return res.status(400).send({ error: 'Prompt is required' });
     }
 
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent(req.body);
     const response = await result.response;
     const text = response.text();
 
