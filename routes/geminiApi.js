@@ -1,19 +1,36 @@
 import { Router } from "express";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import multer from 'multer';
+
 const geminiRouter = Router();
-// The client gets the API key from the environment variable `GEMINI_API_KEY`.
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-geminiRouter.post('/chat', async (req, res) => {
+// Настройка multer для обработки загрузки файлов
+const upload = multer({ storage: multer.memoryStorage() });
+
+geminiRouter.post('/chat', upload.single('file'), async (req, res) => {
   try {
     const { prompt } = req.body;
+    const file = req.file;
 
     if (!prompt) {
       return res.status(400).send({ error: 'Prompt is required' });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    const result = await model.generateContent(prompt);
+    if (!file) {
+      return res.status(400).send({ error: 'File is required' });
+    }
+
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro-vision' });
+
+    const imagePart = {
+      inlineData: {
+        data: file.buffer.toString("base64"),
+        mimeType: file.mimetype,
+      },
+    };
+
+    const result = await model.generateContent([prompt, imagePart]);
     const response = await result.response;
     const text = response.text();
 
@@ -25,4 +42,3 @@ geminiRouter.post('/chat', async (req, res) => {
 });
 
 export default geminiRouter;
-
