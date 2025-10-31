@@ -21,7 +21,7 @@ geminiRouter.post('/chat', upload.single('file'), async (req, res) => {
       return res.status(400).send({ error: 'File is required' });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro-vision' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const imagePart = {
       inlineData: {
