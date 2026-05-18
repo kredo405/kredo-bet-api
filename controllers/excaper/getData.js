@@ -1,5 +1,6 @@
 import axios from "axios";
-import { JSDOM } from "jsdom";
+import http from "node:http";
+import https from "node:https";
 
 const desktopAgents = [
   "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36",
@@ -14,60 +15,212 @@ const desktopAgents = [
   "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:50.0) Gecko/20100101 Firefox/50.0",
 ];
 
-export const getMatchDataExcaper = async (link) => {
-  const userAgent =
-    desktopAgents[Math.floor(Math.random() * desktopAgents.length)];
+const MATCH_CACHE_TTL_MS = 60 * 1000;
+const STALE_CACHE_TTL_MS = 5 * 60 * 1000;
+const REQUEST_TIMEOUT_MS = 20 * 1000;
+const MAX_CACHE_ITEMS = 200;
 
-  const options = {
-    method: "GET",
-    url: link,
-    headers: {
-      "User-Agent": userAgent,
-    },
-  };
+const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 25 });
+const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 25 });
 
-  try {
-    const response = await axios.request(options);
-    const result = response.data;
+const client = axios.create({
+  timeout: REQUEST_TIMEOUT_MS,
+  responseType: "text",
+  decompress: true,
+  httpAgent,
+  httpsAgent,
+  maxContentLength: 5 * 1024 * 1024,
+  headers: {
+    Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Accept-Language": "en-US,en;q=0.9",
+    Connection: "keep-alive",
+  },
+});
 
-    const dom = new JSDOM(result);
-    const tabElements = dom.window.document.querySelectorAll(".tab");
+const cache = new Map();
+const pendingRequests = new Map();
 
-    const outcomed = Array.from(tabElements).map((el) => {
-      const link = el.getAttribute("data-tab").trim();
-      const value = el.textContent.trim();
+const getUserAgent = () =>
+  desktopAgents[Math.floor(Math.random() * desktopAgents.length)];
 
-      const elem = dom.window.document.querySelector(`#${link}`);
-      const itemElements = elem.querySelectorAll("tbody tr");
+const normalizeWhitespace = (value) => value.replace(/\s+/g, " ").trim();
 
-      const items = Array.from(itemElements).map((i) => ({
-        market: i.querySelectorAll("td")[2].textContent.trim(),
+const decodeHtml = (value) =>
+  value
+    .replace(/&emsp;|&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;|&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+
+const textFromHtml = (html = "") =>
+  normalizeWhitespace(
+    decodeHtml(
+      html
+        .replace(/<!--[\s\S]*?-->/g, "")
+        .replace(/<script\b[\s\S]*?<\/script>/gi, "")
+        .replace(/<style\b[\s\S]*?<\/style>/gi, "")
+        .replace(/<[^>]+>/g, " ")
+    )
+  );
+
+const getAttr = (html, attrName) => {
+  const match = html.match(new RegExp(`${attrName}\\s*=\\s*["']([^"']+)["']`, "i"));
+  return match ? match[1].trim() : "";
+};
+
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const extractRows = (tbodyHtml) => {
+  const rows = [];
+  const rowRegex = /<tr\b[^>]*>([\s\S]*?)<\/tr>/gi;
+  let rowMatch;
+
+  while ((rowMatch = rowRegex.exec(tbodyHtml)) !== null) {
+    const cells = [];
+    const cellRegex = /<td\b[^>]*>([\s\S]*?)<\/td>/gi;
+    let cellMatch;
+
+    while ((cellMatch = cellRegex.exec(rowMatch[1])) !== null) {
+      cells.push(textFromHtml(cellMatch[1]));
+    }
+
+    if (cells.length >= 11) {
+      rows.push({
+        market: cells[2],
         values: {
-          type: i.querySelectorAll("td")[0].textContent.trim(),
-          date: i.querySelectorAll("td")[1].textContent.trim(),
-          sum: i.querySelectorAll("td")[3].textContent.trim(),
-          change: i.querySelectorAll("td")[4].textContent.trim(),
-          time: i.querySelectorAll("td")[5].textContent.trim(),
-          score: i.querySelectorAll("td")[6].textContent.trim(),
-          odd: i.querySelectorAll("td")[7].textContent.trim(),
-          percentChange: i.querySelectorAll("td")[8].textContent.trim(),
-          totalSum: i.querySelectorAll("td")[9].textContent.trim(),
-          percentOfMarket: i.querySelectorAll("td")[10].textContent.trim(),
+          type: cells[0],
+          date: cells[1],
+          sum: cells[3],
+          change: cells[4],
+          time: cells[5],
+          score: cells[6],
+          odd: cells[7],
+          percentChange: cells[8],
+          totalSum: cells[9],
+          percentOfMarket: cells[10],
         },
-      }));
+      });
+    }
+  }
 
-      const teams = dom.window.document.querySelector(`h1`).textContent.trim();
+  return rows;
+};
 
-      return {
-        market: value,
-        values: items,
-        teams: teams,
-      };
+export const parseMatchDataExcaperHtml = (html) => {
+  const h1Match = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i);
+  const teams = h1Match ? textFromHtml(h1Match[1]) : "";
+  const tabs = [];
+  const tabRegex = /<a\b[^>]*class=["'][^"']*\btab\b[^"']*["'][^>]*>[\s\S]*?<\/a>/gi;
+  let tabMatch;
+
+  while ((tabMatch = tabRegex.exec(html)) !== null) {
+    const tabHtml = tabMatch[0];
+    const id = getAttr(tabHtml, "data-tab");
+    const market = textFromHtml(tabHtml);
+
+    if (id && market) {
+      tabs.push({ id, market });
+    }
+  }
+
+  const contentPositions = tabs.map(({ id }) =>
+    html.search(new RegExp(`<div\\b[^>]*id=["']${escapeRegExp(id)}["'][^>]*>`, "i"))
+  );
+
+  return tabs.map(({ market }, index) => {
+    const contentStart = contentPositions[index];
+    const nextContentStart =
+      contentPositions.find((position) => position > contentStart) || html.length;
+
+    if (contentStart === -1) {
+      return { market, values: [], teams };
+    }
+
+    const sectionHtml = html.slice(contentStart, nextContentStart);
+    const values = [];
+    const tbodyRegex = /<tbody\b[^>]*>([\s\S]*?)<\/tbody>/gi;
+    let tbodyMatch;
+
+    while ((tbodyMatch = tbodyRegex.exec(sectionHtml)) !== null) {
+      values.push(...extractRows(tbodyMatch[1]));
+    }
+
+    return {
+      market,
+      values,
+      teams,
+    };
+  });
+};
+
+const isAllowedMatchUrl = (link) => {
+  try {
+    const url = new URL(link);
+    return url.protocol === "https:" && url.hostname === "www.excapper.com";
+  } catch {
+    return false;
+  }
+};
+
+const rememberCache = (link, data) => {
+  if (cache.size >= MAX_CACHE_ITEMS) {
+    cache.delete(cache.keys().next().value);
+  }
+
+  cache.set(link, { data, timestamp: Date.now() });
+};
+
+const getCached = (link, maxAgeMs) => {
+  const item = cache.get(link);
+
+  if (!item || Date.now() - item.timestamp > maxAgeMs) {
+    return null;
+  }
+
+  return item.data;
+};
+
+const fetchAndParseMatch = async (link) => {
+  const response = await client.get(link, {
+    headers: {
+      "User-Agent": getUserAgent(),
+    },
+  });
+
+  const data = parseMatchDataExcaperHtml(response.data);
+  rememberCache(link, data);
+
+  return data;
+};
+
+export const getMatchDataExcaper = async (link) => {
+  if (!link || !isAllowedMatchUrl(link)) {
+    return [];
+  }
+
+  const fresh = getCached(link, MATCH_CACHE_TTL_MS);
+
+  if (fresh) {
+    return fresh;
+  }
+
+  if (pendingRequests.has(link)) {
+    return pendingRequests.get(link);
+  }
+
+  const request = fetchAndParseMatch(link)
+    .catch((error) => {
+      console.error("Failed to load Excapper match data:", error.message);
+      return getCached(link, STALE_CACHE_TTL_MS) || [];
+    })
+    .finally(() => {
+      pendingRequests.delete(link);
     });
 
-    return outcomed;
-  } catch (error) {
-    console.log(error);
-    return []; // Вернуть пустой массив в случае ошибки
-  }
+  pendingRequests.set(link, request);
+
+  return request;
 };
