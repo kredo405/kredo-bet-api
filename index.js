@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import nbBetRouter from "./routes/nbBet.js";
@@ -40,8 +41,8 @@ app.post('/chat', async (req, res) => {
     res.status(500).send({ error: `Failed to generate content ${error}` });
   }
 });
-// Port Number
-const port = 8000;
+// Heroku provides the port through process.env.PORT.
+const port = process.env.PORT || 8000;
 
 // Server setup
 app.listen(port, () => {

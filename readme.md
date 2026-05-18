@@ -57,6 +57,25 @@ http://localhost:8000
 curl http://localhost:8000/nbBet
 ```
 
+## 🚢 Деплой на Heroku
+
+Приложение готово к запуску на Heroku через `Procfile`:
+
+```bash
+heroku create kredo-bet-api
+heroku config:set GEMINI_API_KEY=your_gemini_api_key
+git push heroku main
+```
+
+Heroku сам передаст порт через `PORT`, локально сервер продолжит запускаться на `8000`.
+
+Проверка после деплоя:
+
+```bash
+heroku open
+heroku logs --tail
+```
+
 ## 🤝 Вклад в проект
 
 1. Форкните репозиторий

@@ -1,0 +1,11 @@
+{
+  "name": "kredo-bet-api",
+  "description": "Express API for aggregated sports betting data",
+  "scripts": {},
+  "env": {
+    "GEMINI_API_KEY": {
+      "description": "Google Gemini API key used by /chat and /gemini/chat endpoints",
+      "required": true
+    }
+  }
+}
